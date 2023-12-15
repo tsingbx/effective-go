@@ -1,3 +1,3 @@
-module github.com/tsingbx/my-effective-go/ch05
+module github.com/tsingbx/effective-go/ch5
 
 go 1.21.5

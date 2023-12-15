@@ -11,11 +11,11 @@ import (
 )
 
 type flags struct {
-	url  string
-	n, c int
-	t    time.Duration
-	m    int
-	H    string
+	url       string
+	n, c, rps int
+	t         time.Duration
+	m         int
+	H         string
 }
 
 const usageText = `
@@ -78,6 +78,7 @@ func (f *flags) parse(s *flag.FlagSet, args []string) error {
 
 	s.Var(toNumber(&f.n), "n", "Number of requests to make")
 	s.Var(toNumber(&f.c), "c", "Concurrency level")
+	s.Var(toNumber(&f.rps), "r", "Throttle requests per second")
 	s.Var(toMethod(&f.m), "m", "Should be GET,PUT,POST")
 	s.Var(toReqTimeout(&f.t), "t", "Timeout should be > 0s")
 	s.Var(toHttpHead(&f.H), "H", "Http head shoud valid")

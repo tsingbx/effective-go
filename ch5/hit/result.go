@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -60,6 +61,12 @@ func (r *Result) Fprint(out io.Writer) {
 		p("\tFatest 	: %s\n", round(r.Fatest))
 		p("\tSlowest 	: %s\n", round(r.Slowest))
 	}
+}
+
+func (r *Result) String() string {
+	var s strings.Builder
+	r.Fprint(&s)
+	return s.String()
 }
 
 func (r *Result) success() float64 {
