@@ -6,11 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"os/signal"
-	"runtime"
-	"time"
 
 	"github.com/tsingbx/effective-go/ch5/hit"
 )
@@ -36,33 +33,25 @@ func main() {
 }
 
 func run(s *flag.FlagSet, args []string, out io.Writer) error {
-	f := &flags{
-		n: 100,
-		c: runtime.NumCPU(),
-	}
+	f := &flags{}
 	if err := f.parse(s, args); err != nil {
 		return err
 	}
 	fmt.Fprintln(out, banner())
-	m := method(f.m)
-	fmt.Fprintf(out, "Making %d requests to %s with a concurrency level of %d timeout %v, method:%s, headers: %s\n", f.n, f.url, f.c, f.t, m.String(), headersString())
+	fmt.Fprintf(out, "Making %d requests to %s with a concurrency level of %d.\n",
+		f.n, f.url, f.c)
 	if f.rps > 0 {
 		fmt.Fprintf(out, "(RPS: %d)\n", f.rps)
 	}
-	request, err := http.NewRequest(http.MethodGet, f.url, http.NoBody)
-	if err != nil {
-		return err
-	}
-	const timeout = 60 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+
+	ctx, cancel := context.WithTimeout(context.Background(), f.t)
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 	defer stop()
-	client := &hit.Client{C: f.c, RPS: f.rps, Timeout: 10 * time.Second}
-	sum := client.Do(ctx, request, f.n)
+	sum, _ := hit.Do(ctx, f.url, f.n, hit.Concurrency(f.c), hit.Timeout(f.t), hit.RPS(f.rps))
 	sum.Fprint(out)
 	if err := ctx.Err(); errors.Is(err, context.DeadlineExceeded) {
-		err = fmt.Errorf("error occurred: timed out in %s", timeout)
+		err = fmt.Errorf("error occurred: timed out in %s", f.t)
 		fmt.Fprintf(out, "%v", err)
 		return err
 	}

@@ -9,8 +9,8 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/cmd/hit",
-            "args": ["-n=100000", "-c=10", "http://localhost:9090"]
+            "program": "${workspaceFolder}/ch5/cmd/hit",
+            "args": ["-n=100000", "-c=10", "-t=10s", "-r=2", "http://localhost:8000"]
         }
     ]
 }

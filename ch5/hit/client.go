@@ -2,7 +2,9 @@ package hit
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"runtime"
 	"time"
 )
 
@@ -27,7 +29,7 @@ func (c *Client) do(ctx context.Context, r *http.Request, n int) *Result {
 	})
 
 	if c.RPS > 0 {
-		p = throttle(p, time.Second/time.Duration(c.RPS*c.C))
+		p = throttle(ctx, p, time.Second/time.Duration(c.RPS*c.C))
 	}
 
 	var (
@@ -54,8 +56,56 @@ func (c *Client) send(client *http.Client) SendFunc {
 func (c *Client) client() *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{
-			MaxIdleConnsPerHost: c.C,
+			MaxIdleConnsPerHost: c.concurrency(),
 		},
 		Timeout: c.Timeout,
 	}
+}
+
+func (c *Client) concurrency() int {
+	if c.C > 0 {
+		return c.C
+	}
+	return runtime.NumCPU()
+}
+
+// Option allows changes Client's behavior.
+type Option func(*Client) Option
+
+// Concurrency changes the Client's concurrency level.
+func Concurrency(n int) Option {
+	return func(c *Client) Option {
+		prev := c.C
+		c.C = n
+		return Concurrency(prev)
+	}
+}
+
+func RPS(rps int) Option {
+	return func(c *Client) Option {
+		prev := c.RPS
+		c.RPS = rps
+		return RPS(prev)
+	}
+}
+
+// Timeout changes the Client's timeout per request.
+func Timeout(d time.Duration) Option {
+	return func(c *Client) Option {
+		prev := c.Timeout
+		c.Timeout = d
+		return Timeout(prev)
+	}
+}
+
+func Do(ctx context.Context, url string, n int, opts ...Option) (*Result, error) {
+	var c Client
+	for _, o := range opts {
+		o(&c)
+	}
+	r, err := http.NewRequest(http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("new http request: %w", err)
+	}
+	return c.Do(ctx, r, n), nil
 }
