@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/ch5/cmd/hit",
-            "args": ["-n=100000", "-c=10", "-t=10s", "-r=2", "http://localhost:8000"]
+            "args": ["-n=100000", "-c=10", "-t=20s", "-r=1", "http://localhost/tutorial/"]
         }
     ]
 }

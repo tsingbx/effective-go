@@ -11,9 +11,10 @@ import (
 // Client sends HTTP requests and returns an aggregated performance
 // result. The fields should not be changed after initializing.
 type Client struct {
-	C       int           // C is the concurrency level
-	RPS     int           // RPS throttles the requests per second
-	Timeout time.Duration // Timeout per request
+	C          int           // C is the concurrency level
+	RPS        int           // RPS throttles the requests per second
+	Timeout    time.Duration // Timeout per request
+	httpClient *http.Client
 }
 
 // Do sends n HTTP requests and returns an aggregated result.
@@ -29,7 +30,7 @@ func (c *Client) do(ctx context.Context, r *http.Request, n int) *Result {
 	})
 
 	if c.RPS > 0 {
-		p = throttle(ctx, p, time.Second/time.Duration(c.RPS*c.C))
+		p = throttle(ctx, p, time.Second/time.Duration(c.RPS*c.concurrency()))
 	}
 
 	var (
@@ -54,12 +55,15 @@ func (c *Client) send(client *http.Client) SendFunc {
 }
 
 func (c *Client) client() *http.Client {
-	return &http.Client{
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: c.concurrency(),
-		},
-		Timeout: c.Timeout,
+	if c.httpClient == nil {
+		c.httpClient = &http.Client{
+			Transport: &http.Transport{
+				MaxIdleConnsPerHost: c.concurrency(),
+			},
+			Timeout: c.Timeout,
+		}
 	}
+	return c.httpClient
 }
 
 func (c *Client) concurrency() int {
@@ -71,6 +75,15 @@ func (c *Client) concurrency() int {
 
 // Option allows changes Client's behavior.
 type Option func(*Client) Option
+
+// Client changes the Client's client
+func HttpClient(httpClient *http.Client) Option {
+	return func(c *Client) Option {
+		prev := c.httpClient
+		c.httpClient = httpClient
+		return HttpClient(prev)
+	}
+}
 
 // Concurrency changes the Client's concurrency level.
 func Concurrency(n int) Option {

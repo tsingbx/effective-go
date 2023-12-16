@@ -43,7 +43,6 @@ func run(s *flag.FlagSet, args []string, out io.Writer) error {
 	if f.rps > 0 {
 		fmt.Fprintf(out, "(RPS: %d)\n", f.rps)
 	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), f.t)
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()

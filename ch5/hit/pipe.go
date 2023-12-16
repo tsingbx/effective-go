@@ -32,10 +32,14 @@ func produce(ctx context.Context, n int, fn func() *http.Request) <-chan *http.R
 func Throttle(ctx context.Context, in <-chan *http.Request, out chan<- *http.Request, delay time.Duration) {
 	t := time.NewTicker(delay)
 	defer t.Stop()
-
 	for r := range in {
-		<-t.C
-		out <- r
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			<-t.C
+			out <- r
+		}
 	}
 }
 
